@@ -33,7 +33,10 @@ $net->AddCell('sensor');
 $net->AddCell('summator');
 
 $firstcell=$net->AddCell('neuron');
+$net->ConnectCell($firstcell);
 
+//$net->ConnectCell($net->AddCell('neuron'));
+//$net->ConnectCell($net->AddCell('neuron'));
 
 print_r($net);
 

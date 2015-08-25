@@ -18,35 +18,85 @@ class cell
     public $maxoutputs;
 
     // i/o
-    // array('from' => id, 'type' => (rand(0, 1) ? -1 : 1), 'state' => 0)
+    // array('cell' => id, 'type' => (rand(0, 1) ? -1 : 1), 'state' => 0)
     public $inputs = array();
-    // array('to' => 3, 'state' => 0)
+    // array('cell' => 3, 'state' => 0)
     public $outputs = array();
 
-    public function GetFreeInputs() {
-        $count =count($this->inputs);
-        return ($count<$this->maxinputs) ? $this->maxinputs-$count : false;
-    }
-
-    public function GetFreeOutputs() {
-        $count =count($this->outputs);
-        return ($count<$this->$maxoutputs) ? $this->$maxoutputs-$count : false;
-    }
-
-    public function FindInputByFromId($id)
+    public function DeleteInput($id)
     {
         for ($i = 0; $i < count($this->inputs); $i++) {
-            if ($this->inputs[$i]['from'] == $id) {
+            if ($this->inputs[$i]['cell'] == $id) {
+                $this->inputs[$i]['cell'] = -1;
+            }
+        }
+        return true;
+    }
+
+    public function DeleteOutput($id)
+    {
+        for ($i = 0; $i < count($this->outputs); $i++) {
+            if ($this->outputs[$i]['cell'] == $id) {
+                $this->outputs[$i]['cell'] = -1;
+            }
+        }
+        return true;
+    }
+
+    public function AddInput($id)
+    {
+        for ($i = 0; $i < count($this->inputs); $i++) {
+            if ($this->inputs[$i]['cell'] == -1) {
+                $this->inputs[$i]['cell'] = $id;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function AddOutput($id)
+    {
+        for ($i = 0; $i < count($this->outputs); $i++) {
+            if ($this->outputs[$i]['cell'] == -1) {
+                $this->outputs[$i]['cell'] = $id;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function GetFreeInputs()
+    {
+        $count = 0;
+        for ($i = 0; $i < count($this->inputs); $i++) {
+            if ($this->inputs[$i]['cell'] == -1) $count++;
+        }
+        return ($count) ? $count : false;
+    }
+
+    public function GetFreeOutputs()
+    {
+        $count = 0;
+        for ($i = 0; $i < count($this->outputs); $i++) {
+            if ($this->outputs[$i]['cell'] == -1) $count++;
+        }
+        return ($count) ? $count : false;
+    }
+
+    public function FindInputByCellId($id)
+    {
+        for ($i = 0; $i < count($this->inputs); $i++) {
+            if ($this->inputs[$i]['cell'] == $id) {
                 return $i;
             }
         }
         return -1;
     }
 
-    public function FindOutputByToId($id)
+    public function FindOutputByCellId($id)
     {
         for ($i = 0; $i < count($this->outputs); $i++) {
-            if ($this->outputs[$i]['to'] == $id) {
+            if ($this->outputs[$i]['cell'] == $id) {
                 return $i;
             }
         }
@@ -64,10 +114,10 @@ class cell
 
 class neuron extends cell
 {
-
     public $phi;
     public $energy;
     public $lifetime;
+    public $thisinput;
 
     public function __construct()
     {
@@ -76,11 +126,36 @@ class neuron extends cell
         $this->phi = 0;
         $this->maxinputs = 2;
         $this->maxoutputs = 1;
-        $this->energy = 0;
+        $this->energy = 1;
         $this->output_weight = 1;
         $this->lifetime = 10;
         $this->state = 0;
         $this->dead = false;
+    }
+
+    public function InitInputs()
+    {
+        if ($this->maxinputs >= 2) {
+            $this->maxinputs = rand(2, $this->maxinputs);
+            for ($i = 0; $i < $this->maxinputs; $i++) {
+                array_push($this->inputs,
+                    array('cell' => -1, 'type' => (rand(0, 1) ? -1 : 1), 'state' => 0)
+                );
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public function InitOutputs()
+    {
+        for ($i = 0; $i < $this->maxoutputs; $i++) {
+            array_push($this->outputs,
+                array('cell' => -1, 'state' => 0)
+            );
+        }
+        return true;
     }
 
 }
@@ -92,10 +167,25 @@ class sensor extends cell
     {
         $this->type = 'sensor';
         $this->maxinputs = 0;
-        $this->maxoutputs = 10;
+        $this->maxoutputs = 3;
         $this->output_weight = 1;
         $this->state = 0;
         $this->dead = false;
+    }
+
+    public function InitInputs()
+    {
+        return true;
+    }
+
+    public function InitOutputs()
+    {
+        for ($i = 0; $i < $this->maxoutputs; $i++) {
+            array_push($this->outputs,
+                array('cell' => -1, 'state' => 0)
+            );
+        }
+        return true;
     }
 
 }
@@ -106,11 +196,30 @@ class summator extends cell
     public function __construct()
     {
         $this->type = 'summator';
-        $this->maxinputs = 10;
+        $this->maxinputs = 3;
         $this->maxoutputs = 0;
         $this->output_weight = 1;
         $this->state = 0;
         $this->dead = false;
+    }
+
+    public function InitInputs()
+    {
+        if ($this->maxinputs >= 2) {
+            for ($i = 0; $i < $this->maxinputs; $i++) {
+                array_push($this->inputs,
+                    array('cell' => -1, 'type' => (rand(0, 1) ? -1 : 1), 'state' => 0)
+                );
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public function InitOutputs()
+    {
+        return true;
     }
 }
 
@@ -167,6 +276,10 @@ class net
             return false;
         }
         $new->id = $this->GetMaxId() + 1;
+
+        $new->InitInputs();
+        $new->InitOutputs();
+
         if (is_array($params)) {
             foreach ($params as $tname => $tparam) {
                 $this->$tname = $tparam;
@@ -177,8 +290,53 @@ class net
 
     }
 
-    public function ConnectCell($id) {
+    public function ConnectCell($id)
+    {
+        if (is_object($this->net[$id])) {
+            $obj = &$this->net[$id];
+            // neuron
+            if ($obj->type == 'neuron') {
 
+                // output
+                $freeout = $obj->GetFreeOutputs();
+                if ($freeout)
+                    for ($i = 0; $i < $freeout; $i++) {
+                        $randsummator = $this->GetFreeInputRandCell('summator', array($obj->id));
+                        $randneuro = $this->GetFreeInputRandCell('neuron', array($obj->id));
+
+                        // try summator first
+                        if ($randsummator !== false) {
+                            $this->net[$randsummator]->AddInput($obj->id);
+                            $obj->AddOutput($this->net[$randsummator]->id);
+                        } else if ($randneuro !== false) {
+                            // other neuro
+                            $this->net[$randneuro]->AddInput($obj->id);
+                            $obj->AddOutput($this->net[$randneuro]->id);
+                        }
+                    }
+
+                // input
+                $freein = $obj->GetFreeInputs();
+                if ($freein)
+                    for ($i = 0; $i < $freein; $i++) {
+                        $randsensor = $this->GetFreeOutputRandCell('sensor', array($obj->id));
+                        $randneuro = $this->GetFreeOutputRandCell('neuron', array($obj->id));
+
+                        // try summator first
+                        if ($randsensor !== false) {
+                            $this->net[$randsensor]->AddOutput($obj->id);
+                            $obj->AddInput($this->net[$randsensor]->id);
+                        } else if ($randneuro !== false) {
+                            // other neuro
+                            $this->net[$randneuro]->AddOutput($obj->id);
+                            $obj->AddInput($this->net[$randneuro]->id);
+                        }
+                    }
+
+            }
+
+
+        }
     }
 
     public function IsSensor($obj)
@@ -189,5 +347,38 @@ class net
     public function IsSummator($obj)
     {
         return (is_object($obj) && $obj->type == 'summator') ? true : false;
+    }
+
+    public function GetFreeInputRandCell($type = 'neuron', $exclude = array())
+    {
+        $rand = array();
+        foreach ($this->net as $cid => $cell) {
+            if ($cell->type == $type && $cell->GetFreeInputs() && !in_array($cell->id, $exclude)) {
+                array_push($rand, $cid);
+            }
+        }
+        return (count($rand)) ? $rand[array_rand($rand)] : false;
+    }
+
+    public function GetFreeOutputRandCell($type = 'neuron', $exclude = array())
+    {
+        $rand = array();
+        foreach ($this->net as $cid => $cell) {
+            if ($cell->type == $type && $cell->GetFreeOutputs() && !in_array($cell->id, $exclude)) {
+                array_push($rand, $cid);
+            }
+        }
+        return (count($rand)) ? $rand[array_rand($rand)] : false;
+    }
+
+    public function GetRandCell($type = 'neuron')
+    {
+        $rand = array();
+        foreach ($this->net as $cid => $cell) {
+            if ($cell->type == $type) {
+                array_push($rand, $cid);
+            }
+        }
+        return (count($rand)) ? $rand[array_rand($rand)] : false;
     }
 }
