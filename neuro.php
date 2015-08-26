@@ -18,9 +18,9 @@ class cell
     public $maxoutputs;
 
     // i/o
-    // array('cell' => id, 'type' => (rand(0, 1) ? -1 : 1), 'state' => 0)
+    // array('cell' => {id, -1}, 'type' => (rand(0, 1) ? -1 : 1), 'state' => 0)
     public $inputs = array();
-    // array('cell' => 3, 'state' => 0)
+    // array('cell' => {id, -1}, 'state' => 0)
     public $outputs = array();
 
     public function DeleteInput($id)
@@ -360,6 +360,17 @@ class net
         return (count($rand)) ? $rand[array_rand($rand)] : false;
     }
 
+    public function GetByType($type = 'neuron')
+    {
+	$result = array();
+	foreach ($this->net as $cid => $cell) {
+	    if ($cell->type == $type  ) {
+		array_push($result, $cid);
+	    }
+	}
+	return (count($result)) ? $result : false;
+    }
+
     public function GetFreeOutputRandCell($type = 'neuron', $exclude = array())
     {
         $rand = array();
@@ -381,4 +392,8 @@ class net
         }
         return (count($rand)) ? $rand[array_rand($rand)] : false;
     }
+}
+
+class wave {
+    public $paths = array();
 }
