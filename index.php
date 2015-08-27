@@ -52,7 +52,6 @@ foreach ($data as $tdata) {
 		    array('success' => 0, 'history' => array($tout['cell']), 'stop' => 0, 'point' => $tout['cell'])
 		);
 		$ixinp = $net->net[$tout['cell']]->FindInputByCellId($net->net[$tsensor]->id);
-
 		$net->net[$tout['cell']]->state += $net->net[$tout['cell']]->inputs[$ixinp]['type'] * $net->net[$tsensor]->output_weight;
 	    }
 	}
@@ -72,7 +71,7 @@ foreach ($data as $tdata) {
 
 
 print_r($net);
-
+print_r($path);
 
 exit;
 
